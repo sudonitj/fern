@@ -6,8 +6,6 @@
 
 A lightweight single-file WebAssembly-based graphics library for creating interactive visual applications using simple C code.
 
-![Fern Graphics Example](assets/example_scene.png)
-
 ## Table of Contents
 
 - [Overview](#overview)
@@ -370,6 +368,10 @@ sequenceDiagram
         Canvas->>User: Display Frame
     end
 ```
+
+## Example
+
+![Fern Graphics Example](assets/example_scene.png)
 
 ## Contributing
 
