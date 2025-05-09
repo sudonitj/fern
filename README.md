@@ -4,7 +4,7 @@
   <img src="assets/logo.png" alt="Fern Graphics Logo" width="200"/>
 </p>
 
-A lightweight single-file WebAssembly-based graphics library for creating interactive visual applications using simple C code.
+A lightweight single-file WebAssembly-based graphics library for creating visual applications using simple C code.
 
 ## Table of Contents
 
