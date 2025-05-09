@@ -68,7 +68,7 @@ source ./emsdk_env.sh
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/fern.git
+git clone https://github.com/RishiAhuja/fern.git
 cd fern
 
 # Make the CLI script executable
