@@ -54,12 +54,6 @@ jobs:
         ./example
 *.pdb
 
-# Output files
-*.ppm
-*.png
-*.jpg
-*.jpeg
-
 # Editor directories and files
 .vscode/
 .idea/

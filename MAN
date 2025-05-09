@@ -1,0 +1,29 @@
+cat > /home/rishi/graph_c/fern.1 << 'EOF'
+.TH FERN 1 "May 2025" "Fern 1.0" "Fern Graphics Framework"
+.SH NAME
+fern \- compile and run WebAssembly graphics applications
+.SH SYNOPSIS
+.B fern
+[\fIFILENAME\fR]
+.SH DESCRIPTION
+.B fern
+is a tool for compiling C graphics applications into WebAssembly and running them in a browser.
+.PP
+If no filename is provided, it searches for main.c or example.c in the current directory.
+.SH OPTIONS
+.TP
+.I FILENAME
+The C source file to compile. Defaults to main.c or example.c if available.
+.SH EXAMPLES
+.TP
+.B fern
+Compile main.c or example.c and run the application.
+.TP
+.B fern myapp.c
+Compile myapp.c and run the application.
+.SH AUTHOR
+Fern Graphics Framework Team
+EOF
+
+sudo install -m 644 /home/rishi/graph_c/fern.1 /usr/local/share/man/man1/
+sudo mandb

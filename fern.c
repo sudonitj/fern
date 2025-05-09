@@ -1,20 +1,96 @@
-#ifndef FERN_H
-#define FERN_H
-
 #include <stdio.h>
 #include <stdint.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <emscripten.h>
 
+typedef struct Point Point;
+typedef struct FernCanvas FernCanvas;
+
+struct Point {
+    int x;
+    int y;
+};
+
+struct FernCanvas {
+    uint32_t* pixels;
+    size_t height;
+    size_t width;
+};
+
+#define Colors_green 0xFF00FF00
+#define Colors_blue  0xFF0000FF
+#define Colors_red   0xFFFF0000
+#define Colors_gray  0xFF202020
+#define Colors_black 0xFF000000
+#define Colors_white 0xFFFFFFFF
+
+void fern_init_wasm(uint32_t* pixel_buffer, size_t height, size_t width);
+void ffill(uint32_t* pixels, size_t height, size_t width, uint32_t color);
+void frect(uint32_t* pixels, size_t height, size_t width, uint32_t color, 
+          size_t x, size_t y, size_t w, size_t h);
+void fcircle(uint32_t* pixels, size_t height, size_t width, uint32_t color, 
+            size_t cx, size_t cy, size_t r);
+void fline(uint32_t* pixels, size_t height, size_t width, uint32_t color, 
+          int x1, int y1, int x2, int y2, int thickness);
+void fern_start_render_loop(void);
+Point Point_create(int x, int y);
+void runApp(FernCanvas canvas);
+void Container(uint32_t color, int x, int y, int width, int height);
+void CenteredContainer(int width, int height, uint32_t color);
+void CircleWidget(int radius, Point position, uint32_t color);
+void LineWidget(Point start, Point end, int thickness, uint32_t color);
+
+#define color(c) c
+#define x(val) val
+#define y(val) val
+#define width(w) w
+#define height(h) h
+#define radius(r) r
+#define position(p) p
+#define start(p) p
+#define end(p) p
+#define thickness(t) t
+
 static uint32_t* buffer_ptr = NULL;
 static size_t buffer_width = 0;
 static size_t buffer_height = 0;
+FernCanvas current_canvas;
 
 #define return_defer(value) do {result = (value); goto defer;} while(0)
-
 typedef int Errno;
 
+Point Point_create(int x, int y) {
+    Point p = {x, y};
+    return p;
+}
+
+void runApp(FernCanvas canvas) {
+    current_canvas = canvas;
+    fern_init_wasm(canvas.pixels, canvas.height, canvas.width);    
+    ffill(canvas.pixels, canvas.height, canvas.width, Colors_gray);
+}
+
+void Container(uint32_t color, int x, int y, int width, int height) {
+    frect(current_canvas.pixels, current_canvas.height, current_canvas.width,
+          color, x, y, width, height);
+}
+
+void CenteredContainer(int width, int height, uint32_t color) {
+    int centered_x = (current_canvas.width - width) / 2;
+    int centered_y = (current_canvas.height - height) / 2;    
+    Container(color, centered_x, centered_y, width, height);
+}
+
+void CircleWidget(int radius, Point position, uint32_t color) {
+    fcircle(current_canvas.pixels, current_canvas.height, current_canvas.width,
+            color, position.x, position.y, radius);
+}
+
+void LineWidget(Point start, Point end, int thickness, uint32_t color) {
+    fline(current_canvas.pixels, current_canvas.height, current_canvas.width,
+          color, start.x, start.y, end.x, end.y, thickness);
+}
 
 static void internal_render_loop() {
     if (!buffer_ptr) return;
@@ -94,7 +170,6 @@ Errno fsave_ppm(uint32_t* pixels, size_t width, size_t height, const char* filen
     return result;
 }
 
-
 void frect(uint32_t* pixels, size_t height, size_t width, uint32_t color, size_t x, size_t y, size_t w, size_t h) {
     for (int dx = 0; dx < (int) h; ++dx) {
         for (int dy = 0; dy < (int) w; ++dy) {
@@ -111,7 +186,7 @@ void fcircle(uint32_t* pixels, size_t height, size_t width, uint32_t color, size
             if (x*x + y*y <= (int) (r*r)){
                 int px = cx + x;
                 int py = cy + y;
-                if (px < (int)width && py < (int)height){
+                if (px >= 0 && px < (int)width && py >= 0 && py < (int)height){
                     pixels[py * width + px] = color;
                 }
             }
@@ -120,7 +195,6 @@ void fcircle(uint32_t* pixels, size_t height, size_t width, uint32_t color, size
 }
 
 // based on bresenham's algo
-
 void fline(uint32_t* pixels, size_t px_height, size_t px_width, uint32_t color, int x1, int y1, int x2, int y2, int thickness){
     int t = thickness;
 
@@ -149,5 +223,3 @@ void fline(uint32_t* pixels, size_t px_height, size_t px_width, uint32_t color, 
         }
     }
 }
-
-#endif // FERN_H_
