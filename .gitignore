@@ -1,0 +1,71 @@
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+fern
+example
+
+# Debug files
+*.dSYM/
+*.su
+*.idbname: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      run: |
+        ./build.sh
+    - name: Run example
+      run: |
+        ./example
+*.pdb
+
+# Output files
+*.ppm
+*.png
+*.jpg
+*.jpeg
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build directory
+build/
+.github/copilot-instructions.md
