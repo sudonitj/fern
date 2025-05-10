@@ -4,9 +4,7 @@
   <img src="assets/logo.png" alt="Fern Graphics Logo" width="200"/>
 </p>
 
-A lightweight single-file WebAssembly-based graphics library for creating interactive visual applications using simple C code.
-
-![Fern Graphics Example](assets/example_scene.png)
+A lightweight single-file WebAssembly-based graphics library for creating visual applications using simple C code.
 
 ## Table of Contents
 
@@ -70,7 +68,7 @@ source ./emsdk_env.sh
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/fern.git
+git clone https://github.com/RishiAhuja/fern.git
 cd fern
 
 # Make the CLI script executable
@@ -370,6 +368,10 @@ sequenceDiagram
         Canvas->>User: Display Frame
     end
 ```
+
+## Example
+
+![Fern Graphics Example](assets/example_scene.png)
 
 ## Contributing
 
