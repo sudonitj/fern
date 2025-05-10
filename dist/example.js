@@ -2033,7 +2033,7 @@ function checkIncomingModuleAPI() {
   ignoredModuleProp('fetchSettings');
 }
 var ASM_CONSTS = {
-  67932: ($0, $1, $2) => { var canvas = document.getElementById('canvas'); var ctx = canvas.getContext('2d'); if (canvas.width !== $1 || canvas.height !== $0) { canvas.width = $1; canvas.height = $0; } var imageData = ctx.createImageData(canvas.width, canvas.height); var data = imageData.data; var buffer = $2; var size = $0 * $1; for (var i = 0; i < size; i++) { var pixel = HEAP32[buffer/4 + i]; var r = pixel & 0xFF; var g = (pixel >> 8) & 0xFF; var b = (pixel >> 16) & 0xFF; var a = (pixel >> 24) & 0xFF; var j = i * 4; data[j + 0] = r; data[j + 1] = g; data[j + 2] = b; data[j + 3] = a; } ctx.putImageData(imageData, 0, 0); }
+  68156: ($0, $1, $2) => { var canvas = document.getElementById('canvas'); var ctx = canvas.getContext('2d'); if (canvas.width !== $1 || canvas.height !== $0) { canvas.width = $1; canvas.height = $0; } var imageData = ctx.createImageData(canvas.width, canvas.height); var data = imageData.data; var buffer = $2; var size = $0 * $1; for (var i = 0; i < size; i++) { var pixel = HEAP32[buffer/4 + i]; var r = pixel & 0xFF; var g = (pixel >> 8) & 0xFF; var b = (pixel >> 16) & 0xFF; var a = (pixel >> 24) & 0xFF; var j = i * 4; data[j + 0] = r; data[j + 1] = g; data[j + 2] = b; data[j + 3] = a; } ctx.putImageData(imageData, 0, 0); }
 };
 var wasmImports = {
   /** @export */

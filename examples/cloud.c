@@ -99,7 +99,7 @@ int main() {
         position(Point_create(670, 150)),
         color(0xFFFFFFFF) 
     );
-    
+
     fern_start_render_loop();
     return 0;
 }
