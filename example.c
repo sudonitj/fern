@@ -152,7 +152,7 @@ void draw_frame() {
         Point_create(50, 40),
         "COLORS",
         2,
-        0xFF000000
+        0x80000000
     );
     
     for (int i = 0; i < MAX_COLORS; i++) {

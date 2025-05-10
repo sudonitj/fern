@@ -11,6 +11,44 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Function to open URL in browser
+open_browser() {
+    local url=$1
+    
+    # Determine the OS and use appropriate command
+    case "$(uname -s)" in
+        Darwin*)    # macOS
+            open "$url"
+            ;;
+        Linux*)     # Linux
+            # Try different browsers
+            if command -v xdg-open &> /dev/null; then
+                xdg-open "$url" &> /dev/null &
+            elif command -v gnome-open &> /dev/null; then
+                gnome-open "$url" &> /dev/null &
+            elif command -v firefox &> /dev/null; then
+                firefox "$url" &> /dev/null &
+            elif command -v google-chrome &> /dev/null; then
+                google-chrome "$url" &> /dev/null &
+            elif command -v chromium-browser &> /dev/null; then
+                chromium-browser "$url" &> /dev/null &
+            else
+                echo -e "${YELLOW}Unable to open browser automatically. Please open the URL manually: ${url}${NC}"
+                return 1
+            fi
+            ;;
+        CYGWIN*|MINGW*|MSYS*)  # Windows
+            start "$url"
+            ;;
+        *)
+            echo -e "${YELLOW}Unable to open browser automatically. Please open the URL manually: ${url}${NC}"
+            return 1
+            ;;
+    esac
+    
+    return 0
+}
+
 # Display help information
 show_help() {
     echo -e "${BLUE}Fern Graphics CLI v${VERSION}${NC}"
@@ -108,7 +146,139 @@ parse_args() {
     fi
 }
 
-# Updated compile function
+# Check for required dependencies
+check_dependencies() {
+    # Check for emcc (Emscripten)
+    if ! command -v emcc &> /dev/null; then
+        echo -e "${RED}Error: Emscripten compiler (emcc) not found.${NC}"
+        echo "Please install Emscripten: https://emscripten.org/docs/getting_started/downloads.html"
+        exit 1
+    fi
+    
+    # Check for Python (for HTTP server)
+    if ! command -v python3 &> /dev/null; then
+        echo -e "${RED}Error: Python 3 not found.${NC}"
+        echo "Please install Python 3: https://www.python.org/downloads/"
+        exit 1
+    fi
+}
+
+# Create a default template.html if none exists
+create_default_template() {
+    cat > template.html << EOF
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fern Application</title>
+    <style>
+        body { margin: 0; background-color: #f0f0f0; font-family: Arial, sans-serif; }
+        canvas { display: block; margin: 20px auto; border: 1px solid #ccc; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #333; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fern Graphics</h1>
+        {{{ CANVAS }}}
+    </div>
+</body>
+</html>
+EOF
+    echo -e "${GREEN}Created default template.html${NC}"
+}
+
+# Create index.html in the dist directory for easier navigation
+create_index_html() {
+    local app_name=$1
+    
+    cat > dist/index.html << EOF
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fern Applications</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #333; }
+        a { color: #0066cc; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>Fern Applications</h1>
+    <p><a href="${app_name}.html">${app_name}</a></p>
+</body>
+</html>
+EOF
+    echo -e "${GREEN}Created index.html in dist directory${NC}"
+}
+
+run_interactive_server() {
+    local source_file=$1
+    local port=$2
+    local output_base=$(basename "$source_file" .c)
+    local url="http://localhost:${port}/${output_base}.html"
+    local server_pid
+    local original_dir=$(pwd) 
+
+    # Navigate to dist directory
+    cd dist
+    
+    # Start server in background
+    python3 -m http.server ${port} &
+    server_pid=$!
+    
+    # Open browser
+    cd "$original_dir"
+    open_browser "$url"
+    
+    echo -e "${GREEN}Server running at ${url}${NC}"
+    echo -e "${YELLOW}Interactive mode enabled. Available commands:${NC}"
+    echo "  r - Recompile and reload"
+    echo "  c - Clear console"
+    echo "  q - Quit server"
+    echo "  h - Show this help"
+    
+    # Read input in a loop
+    while true; do
+        # Read a single character without requiring Enter
+        read -n 1 -s cmd
+        
+        case "$cmd" in
+            r|R)
+                echo -e "${YELLOW}Recompiling...${NC}"
+                cd "$original_dir"
+                compile_app "$source_file"
+                echo -e "${GREEN}Recompiled! Refresh your browser to see changes.${NC}"
+                ;;
+            c|C)
+                clear
+                echo -e "${GREEN}Server running at ${url}${NC}"
+                echo -e "${YELLOW}Interactive mode. Press 'h' for help.${NC}"
+                ;;
+            q|Q)
+                echo -e "${YELLOW}Shutting down server...${NC}"
+                kill $server_pid
+                exit 0
+                ;;
+            h|H)
+                echo -e "${YELLOW}Available commands:${NC}"
+                echo "  r - Recompile and reload"
+                echo "  c - Clear console"
+                echo "  q - Quit server"
+                echo "  h - Show this help"
+                ;;
+            *)
+                # Ignore other keystrokes
+                ;;
+        esac
+    done
+}
+
 compile_app() {
     local source_file=$1
     local output_base=$(basename "$source_file" .c)
@@ -162,20 +332,8 @@ main() {
     
     # Start server if --serve (default) was specified
     if [[ "$SERVE" == true ]]; then
-        # Define the URL to open
-        local output_base=$(basename "$FILE" .c)
-        local url="http://localhost:${PORT}/${output_base}.html"
-        
-        # Start HTTP server in the dist directory
-        echo -e "${YELLOW}Starting HTTP server on port ${PORT}...${NC}"
-        echo -e "${GREEN}Access your application at: $url${NC}"
-        echo -e "${YELLOW}Press Ctrl+C to stop the server${NC}"
-        
-        # Try to open the browser
-        open_browser "$url"
-        
-        # Change to the dist directory and start the server
-        (cd dist && python3 -m http.server ${PORT})
+        echo -e "${YELLOW}Starting interactive development server on port ${PORT}...${NC}"
+        run_interactive_server "$FILE" "$PORT"
     fi
 }
 
