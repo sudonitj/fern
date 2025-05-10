@@ -2,10 +2,26 @@
 #include <stdint.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 #include <emscripten.h>
 
 typedef struct Point Point;
 typedef struct FernCanvas FernCanvas;
+typedef void (*ButtonCallback)(void);
+
+typedef struct {
+    int x;
+    int y;
+    int width;
+    int height;
+    uint32_t normal_color;
+    uint32_t hover_color;
+    uint32_t press_color;
+    const char* label;
+    int text_scale;
+    uint32_t text_color;
+    ButtonCallback on_click;
+} ButtonConfig;
 
 struct Point {
     int x;
@@ -29,6 +45,14 @@ typedef struct {
     int direction;  // 0 = horizontal, 1 = vertical
 } LinearGradient;
 
+typedef struct {
+    int mouse_x;
+    int mouse_y;
+    int mouse_down;
+    int mouse_clicked;
+} InputState;
+
+
 #define GRADIENT_HORIZONTAL 0
 #define GRADIENT_VERTICAL 1
 
@@ -38,6 +62,9 @@ typedef struct {
 #define Colors_gray  0xFF202020
 #define Colors_black 0xFF000000
 #define Colors_white 0xFFFFFFFF
+
+typedef void (*FernDrawCallback)(void);
+static FernDrawCallback current_draw_callback = NULL;
 
 void fern_init_wasm(uint32_t* pixel_buffer, size_t height, size_t width);
 void ffill(uint32_t* pixels, size_t height, size_t width, uint32_t color);
@@ -53,6 +80,9 @@ uint32_t fblend_color(uint32_t color1, uint32_t color2, float t);
 uint32_t gradient_color_at(LinearGradient grad, float position);
 
 void fern_start_render_loop(void);
+void reset_input_events(void);
+void setup_event_listeners(void);
+void fernPrintf(const char* string);
 
 Point Point_create(int x, int y);
 
@@ -81,6 +111,7 @@ void LinearGradientContainer(int x, int y, int width, int height, LinearGradient
 static uint32_t* buffer_ptr = NULL;
 static size_t buffer_width = 0;
 static size_t buffer_height = 0;
+static InputState current_input = {0};
 FernCanvas current_canvas;
 
 #define return_defer(value) do {result = (value); goto defer;} while(0)
@@ -93,7 +124,8 @@ Point Point_create(int x, int y) {
 
 void runApp(FernCanvas canvas) {
     current_canvas = canvas;
-    fern_init_wasm(canvas.pixels, canvas.height, canvas.width);    
+    fern_init_wasm(canvas.pixels, canvas.height, canvas.width);
+    setup_event_listeners(); 
     ffill(canvas.pixels, canvas.height, canvas.width, Colors_gray);
 }
 
@@ -122,10 +154,17 @@ void TextWidget(Point start, const char* text, int scale, uint32_t color) {
     ftext(current_canvas.pixels, current_canvas.width, current_canvas.height, text, start.x, start.y, scale, color);
 }
 
+void fern_set_draw_callback(FernDrawCallback callback) {
+    current_draw_callback = callback;
+}
+
 
 static void internal_render_loop() {
-    if (!buffer_ptr) return;
-    
+     if (current_draw_callback != NULL) {
+        current_draw_callback();
+    }
+
+    if (!buffer_ptr) return;    
     EM_ASM({
         var canvas = document.getElementById('canvas');
         var ctx = canvas.getContext('2d');        
@@ -154,6 +193,11 @@ static void internal_render_loop() {
         
         ctx.putImageData(imageData, 0, 0);       
     }, buffer_height, buffer_width, buffer_ptr);
+    reset_input_events();
+    //  EM_ASM({
+    //     console.log("Mouse position:", $0, $1, "Mouse down:", $2, "Clicked:", $3);
+    // }, current_input.mouse_x, current_input.mouse_y, 
+    //    current_input.mouse_down, current_input.mouse_clicked);
 }
 
 void fern_init_wasm(uint32_t* pixel_buffer, size_t height, size_t width) {
@@ -161,6 +205,62 @@ void fern_init_wasm(uint32_t* pixel_buffer, size_t height, size_t width) {
     buffer_height = height;
     buffer_width = width;
 }
+
+EMSCRIPTEN_KEEPALIVE
+void update_mouse_position(int x, int y) {
+    current_input.mouse_x = x;
+    current_input.mouse_y = y;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void update_mouse_button(int down) {
+    if (!current_input.mouse_down && down) {
+        current_input.mouse_clicked = 1;
+    }
+    current_input.mouse_down = down;
+}
+
+void reset_input_events() {
+    current_input.mouse_clicked = 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setup_event_listeners() {
+    EM_ASM({
+        var canvas = document.getElementById('canvas');
+        
+        canvas.addEventListener('mousemove', function(e) {
+            var rect = canvas.getBoundingClientRect();
+            var mouseX = Math.floor((e.clientX - rect.left) * (canvas.width / rect.width));
+            var mouseY = Math.floor((e.clientY - rect.top) * (canvas.height / rect.height));
+            
+            Module._update_mouse_position(mouseX, mouseY);
+        });
+        
+        canvas.addEventListener('mousedown', function(e) {
+            Module._update_mouse_button(1);
+        });
+        
+        canvas.addEventListener('mouseup', function(e) {
+            Module._update_mouse_button(0);
+        });
+        
+        console.log("Fern: Event listeners initialized");
+    });
+}
+
+EMSCRIPTEN_KEEPALIVE
+void fernPrintf(const char* string) {
+    
+#ifdef __EMSCRIPTEN__
+    EM_ASM({
+        console.log("🌿 Fern: " + UTF8ToString($0));
+    }, string);
+#else
+    printf("🌿 Fern: %s\n", string);
+#endif
+}
+
 
 void fern_start_render_loop(void) {
     emscripten_set_main_loop(internal_render_loop, 0, 1);
@@ -286,6 +386,45 @@ uint32_t gradient_color_at(LinearGradient grad, float position) {
         }
     }
     return 0xFF000000;
+}
+
+void ButtonWidget(ButtonConfig config) {
+    int mouse_over = 
+        current_input.mouse_x >= config.x && 
+        current_input.mouse_x < config.x + config.width &&
+        current_input.mouse_y >= config.y && 
+        current_input.mouse_y < config.y + config.height;
+    
+    uint32_t button_color = config.normal_color;
+    if (mouse_over) {
+        button_color = current_input.mouse_down ? config.press_color : config.hover_color;
+        
+        if (current_input.mouse_clicked && config.on_click != NULL) {
+            config.on_click();
+        }
+    }
+    
+    Container(
+        button_color,
+        config.x, 
+        config.y, 
+        config.width, 
+        config.height
+    );
+    
+
+    if (config.label != NULL) {
+        int text_width = strlen(config.label) * 8 * config.text_scale;
+        int text_x = config.x + (config.width - text_width) / 2;
+        int text_y = config.y + (config.height - 8 * config.text_scale) / 2;
+        
+        TextWidget(
+            Point_create(text_x, text_y),
+            config.label,
+            config.text_scale,
+            config.text_color
+        );
+    }
 }
 
 void LinearGradientContainer(int x, int y, int width, int height, LinearGradient gradient) {

@@ -2033,7 +2033,9 @@ function checkIncomingModuleAPI() {
   ignoredModuleProp('fetchSettings');
 }
 var ASM_CONSTS = {
-  68220: ($0, $1, $2) => { var canvas = document.getElementById('canvas'); var ctx = canvas.getContext('2d'); if (canvas.width !== $1 || canvas.height !== $0) { canvas.width = $1; canvas.height = $0; } var imageData = ctx.createImageData(canvas.width, canvas.height); var data = imageData.data; var buffer = $2; var size = $0 * $1; for (var i = 0; i < size; i++) { var pixel = HEAP32[buffer/4 + i]; var r = pixel & 0xFF; var g = (pixel >> 8) & 0xFF; var b = (pixel >> 16) & 0xFF; var a = (pixel >> 24) & 0xFF; var j = i * 4; data[j + 0] = r; data[j + 1] = g; data[j + 2] = b; data[j + 3] = a; } ctx.putImageData(imageData, 0, 0); }
+  68780: () => { var canvas = document.getElementById('canvas'); canvas.addEventListener('mousemove', function(e) { var rect = canvas.getBoundingClientRect(); var mouseX = Math.floor((e.clientX - rect.left) * (canvas.width / rect.width)); var mouseY = Math.floor((e.clientY - rect.top) * (canvas.height / rect.height)); Module._update_mouse_position(mouseX, mouseY); }); canvas.addEventListener('mousedown', function(e) { Module._update_mouse_button(1); }); canvas.addEventListener('mouseup', function(e) { Module._update_mouse_button(0); }); console.log("Fern: Event listeners initialized"); },  
+ 69360: ($0) => { console.log("🌿 Fern: " + UTF8ToString($0)); },  
+ 69411: ($0, $1, $2) => { var canvas = document.getElementById('canvas'); var ctx = canvas.getContext('2d'); if (canvas.width !== $1 || canvas.height !== $0) { canvas.width = $1; canvas.height = $0; } var imageData = ctx.createImageData(canvas.width, canvas.height); var data = imageData.data; var buffer = $2; var size = $0 * $1; for (var i = 0; i < size; i++) { var pixel = HEAP32[buffer/4 + i]; var r = pixel & 0xFF; var g = (pixel >> 8) & 0xFF; var b = (pixel >> 16) & 0xFF; var a = (pixel >> 24) & 0xFF; var j = i * 4; data[j + 0] = r; data[j + 1] = g; data[j + 2] = b; data[j + 3] = a; } ctx.putImageData(imageData, 0, 0); }
 };
 var wasmImports = {
   /** @export */
@@ -2050,6 +2052,10 @@ var wasmImports = {
 var wasmExports;
 createWasm();
 var ___wasm_call_ctors = createExportWrapper('__wasm_call_ctors', 0);
+var _setup_event_listeners = Module['_setup_event_listeners'] = createExportWrapper('setup_event_listeners', 0);
+var _update_mouse_position = Module['_update_mouse_position'] = createExportWrapper('update_mouse_position', 2);
+var _update_mouse_button = Module['_update_mouse_button'] = createExportWrapper('update_mouse_button', 1);
+var _fernPrintf = Module['_fernPrintf'] = createExportWrapper('fernPrintf', 1);
 var _main = Module['_main'] = createExportWrapper('main', 2);
 var _fflush = createExportWrapper('fflush', 1);
 var _strerror = createExportWrapper('strerror', 1);

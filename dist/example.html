@@ -16,7 +16,7 @@
     </style>
 </head>
 <body>
-    <canvas id="canvas" class="emscripten" width="800" height="600"></canvas>
+  <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
     <script>
       var Module = {
         canvas: document.getElementById('canvas')
@@ -24,4 +24,4 @@
     </script>
     <script async type="text/javascript" src="example.js"></script>
 </body>
-</html>
+</html> 
