@@ -18,6 +18,20 @@ struct FernCanvas {
     size_t width;
 };
 
+typedef struct {
+    uint32_t color;
+    float position;  // 0-1
+} GradientStop;
+
+typedef struct {
+    GradientStop* stops;
+    int stop_count;
+    int direction;  // 0 = horizontal, 1 = vertical
+} LinearGradient;
+
+#define GRADIENT_HORIZONTAL 0
+#define GRADIENT_VERTICAL 1
+
 #define Colors_green 0xFF00FF00
 #define Colors_blue  0xFF0000FF
 #define Colors_red   0xFFFF0000
@@ -35,6 +49,8 @@ void fline(uint32_t* pixels, size_t height, size_t width, uint32_t color,
           int x1, int y1, int x2, int y2, int thickness);
 void fchar(uint32_t* pixels, int width, int height, char c, int x, int y, int scale, uint32_t color);
 void ftext(uint32_t* pixels, int width, int height, const char* text, int x, int y, int scale, uint32_t color);
+uint32_t fblend_color(uint32_t color1, uint32_t color2, float t);
+uint32_t gradient_color_at(LinearGradient grad, float position);
 
 void fern_start_render_loop(void);
 
@@ -46,6 +62,7 @@ void CenteredContainer(int width, int height, uint32_t color);
 void CircleWidget(int radius, Point position, uint32_t color);
 void LineWidget(Point start, Point end, int thickness, uint32_t color);
 void TextWidget(Point start, const char* text, int scale, uint32_t color);
+void LinearGradientContainer(int x, int y, int width, int height, LinearGradient gradient);
 
 #define color(c) c
 #define x(val) val
@@ -59,6 +76,7 @@ void TextWidget(Point start, const char* text, int scale, uint32_t color);
 #define thickness(t) t
 #define text(t) t
 #define scale(s) s
+#define gradient(g) g
 
 static uint32_t* buffer_ptr = NULL;
 static size_t buffer_width = 0;
@@ -103,6 +121,7 @@ void LineWidget(Point start, Point end, int thickness, uint32_t color) {
 void TextWidget(Point start, const char* text, int scale, uint32_t color) {
     ftext(current_canvas.pixels, current_canvas.width, current_canvas.height, text, start.x, start.y, scale, color);
 }
+
 
 static void internal_render_loop() {
     if (!buffer_ptr) return;
@@ -216,7 +235,8 @@ void fline(uint32_t* pixels, size_t px_height, size_t px_width, uint32_t color, 
     int sy = y1 < y2 ? 1 : -1;
 
     int err = (dx - dy);
-
+    int e2;
+ 
     while(1){
         if (x1 >= 0 && x1 < px_width && y1 >= 0 && y1 < px_height) {
             // pixels[y1 * px_width + x1] = color; 
@@ -224,17 +244,80 @@ void fline(uint32_t* pixels, size_t px_height, size_t px_width, uint32_t color, 
         }
 
         if(x1 == x2 && y1 == y2) break;
-        if(err > -dy){
-            err -= dy;
+
+        e2 = 2 * err;
+        if(e2 > -dy){
+            e2 -= dy;
             x1 += sx;
         }
 
-        if(err < dx) {
-            err += dx;
+        if(e2 < dx) {
+            e2 += dx;
             y1 += sy;
         }
     }
 }
+
+uint32_t fblend_color(uint32_t color1, uint32_t color2, float t) {
+    uint8_t r1 = (color1 >> 16) & 0xFF;
+    uint8_t g1 = (color1 >> 8) & 0xFF;
+    uint8_t b1 = color1 & 0xFF;
+    
+    uint8_t r2 = (color2 >> 16) & 0xFF;
+    uint8_t g2 = (color2 >> 8) & 0xFF;
+    uint8_t b2 = color2 & 0xFF;
+    
+    uint8_t r = r1 + (r2 - r1) * t;
+    uint8_t g = g1 + (g2 - g1) * t;
+    uint8_t b = b1 + (b2 - b1) * t;
+    
+    return 0xFF000000 | (r << 16) | (g << 8) | b;
+}
+
+uint32_t gradient_color_at(LinearGradient grad, float position) {
+    if (position <= grad.stops[0].position) return grad.stops[0].color;
+    if (position >= grad.stops[grad.stop_count-1].position) return grad.stops[grad.stop_count-1].color;
+    
+    for (int i = 0; i < grad.stop_count - 1; i++) {
+        if (position >= grad.stops[i].position && position <= grad.stops[i+1].position) {
+            float local_pos = (position - grad.stops[i].position) / 
+                              (grad.stops[i+1].position - grad.stops[i].position);
+            return fblend_color(grad.stops[i].color, grad.stops[i+1].color, local_pos);
+        }
+    }
+    return 0xFF000000;
+}
+
+void LinearGradientContainer(int x, int y, int width, int height, LinearGradient gradient) {
+    if (gradient.direction == GRADIENT_VERTICAL) {
+        for (int row = 0; row < height; row++) {
+            float pos = (float)row / height;
+            uint32_t color = gradient_color_at(gradient, pos);
+            
+            Container(
+                color(color),
+                x(x),
+                y(y + row),
+                width(width),
+                height(1)
+            );
+        }
+    } else {
+        for (int col = 0; col < width; col++) {
+            float pos = (float)col / width;
+            uint32_t color = gradient_color_at(gradient, pos);
+            
+            Container(
+                color(color),
+                x(x + col),
+                y(y),
+                width(1),
+                height(height)
+            );
+        }
+    }
+}
+
 
 static const unsigned char SIMPLE_FONT[][8] = {
     /* A */
@@ -562,7 +645,7 @@ void fchar(uint32_t* pixels, int width, int height, char c, int x, int y, int sc
 void ftext(uint32_t* pixels, int width, int height, const char* text, int x, int y, int scale, uint32_t color) {
     int cursor_x = x;
     for(const char* p = text; *p!='\0'; p++){
-        if (*p == ' ') {
+        if (*p == ' ' || *p < 'A' || *p > 'Z') {
             cursor_x += 4 * scale;
             continue;
         }

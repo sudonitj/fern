@@ -40,6 +40,8 @@ Fern is a minimalist graphics library designed for simplicity, performance, and 
 - Declarative API with named parameters
 - WebAssembly-powered rendering for near-native performance
 - Support for basic shapes, lines, and pixel manipulation
+- Bitmap font text rendering with customizable scale
+- Linear gradient support with multi-color stops
 - Simple CLI tool for compiling and serving applications
 - PPM image export capability for saving renderings
 - Lightweight (~500 lines of code)
@@ -152,6 +154,30 @@ struct FernCanvas {
     size_t width;
 };
 ```
+#### `GradientStop`
+Represents a color stop in a gradient.
+
+```c
+typedef struct {
+    uint32_t color;
+    float position;  // 0.0 to 1.0
+} GradientStop;
+```
+#### `LinearGradient`
+Defines a linear gradient with multiple color stops.
+
+```c
+typedef struct {
+    GradientStop* stops;
+    int stop_count;
+    int direction;  // GRADIENT_HORIZONTAL or GRADIENT_VERTICAL
+} LinearGradient;
+
+// Direction constants
+#define GRADIENT_HORIZONTAL 0
+#define GRADIENT_VERTICAL 1
+```
+
 
 ### Color Constants
 
@@ -217,6 +243,32 @@ LineWidget(
 );
 ```
 
+#### TextWidget
+Renders text using the built-in bitmap font.
+
+```c
+TextWidget(
+    start(Point position),
+    text(const char* text),
+    scale(int scale),
+    color(uint32_t color)
+);
+```
+
+#### LinearGradientContainer
+Creates a rectangle filled with a linear color gradient.
+
+```c
+LinearGradientContainer(
+    x(int x),
+    y(int y),
+    width(int width),
+    height(int height),
+    gradient(LinearGradient gradient)
+);
+```
+
+
 ### Core Drawing Functions
 
 For more advanced use cases, you can use the lower-level drawing functions:
@@ -236,6 +288,16 @@ void fcircle(uint32_t* pixels, size_t height, size_t width, uint32_t color,
 // Draw a line with thickness
 void fline(uint32_t* pixels, size_t height, size_t width, uint32_t color, 
           int x1, int y1, int x2, int y2, int thickness);
+    
+// Render a single character from the bitmap font
+void fchar(uint32_t* pixels, int width, int height, char c, int x, int y, int scale, uint32_t color);
+
+// Render a text string using the bitmap font
+void ftext(uint32_t* pixels, int width, int height, const char* text, int x, int y, int scale, uint32_t color);
+
+// Get a color at a specific position in a gradient
+uint32_t gradient_color_at(LinearGradient grad, float position);
+
 ```
 
 ### Application Lifecycle
@@ -277,6 +339,63 @@ for (int i = 0; i < 180; i++) {
         thickness(1),
         color(Colors_gray)  
     );
+}
+```
+### Creating Gradients
+To create and use a gradient:
+
+```c
+// Create gradient stops
+GradientStop sunset_stops[] = {
+    {0xFF330066, 0.0},  // Deep purple at the top
+    {0xFFFF6600, 0.4},  // Orange at 40%
+    {0xFF000033, 0.7},  // Dark blue at 70%
+    {0xFF000000, 1.0}   // Black at the bottom
+};
+
+// Create the gradient
+LinearGradient sunset_gradient = {
+    sunset_stops,
+    4,               // Number of stops
+    GRADIENT_VERTICAL  // Direction
+};
+
+// Draw the gradient
+LinearGradientContainer(0, 0, WIDTH, HEIGHT, sunset_gradient);
+```
+
+### Text Rendering
+Rendering text with different scales:
+
+
+```c
+// Draw a large title
+TextWidget(
+    Point_create(WIDTH/2 - 150, 50),
+    "FERN GRAPHICS",
+    4,  // Scale factor
+    NEON_GREEN
+);
+
+// Draw a smaller subtitle
+TextWidget(
+    Point_create(WIDTH/2 - 120, 100),
+    "TEXT RENDERING DEMO",
+    2,  // Scale factor
+    Colors_white
+);
+```
+You can also access the lower-level text functions:
+```c
+// Draw a single character
+fchar(pixels, WIDTH, HEIGHT, 'A', 100, 100, 3, Colors_red);
+
+// Draw custom-spaced text
+int x = 50;
+const char* message = "CUSTOM SPACING";
+for(int i = 0; message[i] != '\0'; i++) {
+    fchar(pixels, WIDTH, HEIGHT, message[i], x, 200, 2, Colors_blue);
+    x += 20;  // Custom character spacing
 }
 ```
 
@@ -371,7 +490,8 @@ sequenceDiagram
 
 ## Example
 
-![Fern Graphics Example](assets/example_scene.png)
+![Fern Graphics Example 2](assets/example_scene2.png)
+![Fern Graphics Example 1](assets/example_scene.png)
 
 ## Contributing
 
