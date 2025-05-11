@@ -5,7 +5,7 @@
 </p>
 
 A lightweight single-file WebAssembly-based graphics library for creating visual interactive applications using simple C code.
-
+[Checkout Docs](https://fern.rishia.in)
 ## Table of Contents
 
 - [Overview](#overview)
