@@ -11,6 +11,15 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+find_cpp_sources() {
+    local sources=""
+    # Find all .cpp files in the src/cpp directory
+    for file in $(find src/cpp/src -name "*.cpp"); do
+        sources="$sources $file"
+    done
+    echo "$sources"
+}
+
 # Function to open URL in browser
 open_browser() {
     local url=$1
@@ -433,11 +442,28 @@ compile_app() {
     fi
     
     # Compile with emscripten
-    emcc "$source_file" -o "$dist_dir/${output_base}.html" --shell-file template.html \
-        $std_flag $include_path \
-        -s WASM=1 \
-        -s EXPORTED_RUNTIME_METHODS=['cwrap','HEAPU8'] \
-        -s ALLOW_MEMORY_GROWTH=1    
+    if [[ "$IS_CPP" = true ]]; then
+        std_flag="-std=gnu++14"
+        include_path="-I src/cpp/include"        
+        # Get all C++ source files
+        cpp_sources=$(find_cpp_sources)
+        
+        # Compile with all C++ source files
+        emcc "$source_file" $cpp_sources -o "$dist_dir/${output_base}.html" --shell-file template.html \
+            $std_flag $include_path \
+            -s WASM=1 \
+            -s EXPORTED_RUNTIME_METHODS=['cwrap','HEAPU8'] \
+            -s ALLOW_MEMORY_GROWTH=1
+    else
+        echo -e "${YELLOW}Compiling $source_file with C implementation...${NC}"
+        
+        # Original C compilation command
+        emcc "$source_file" -o "$dist_dir/${output_base}.html" --shell-file template.html \
+            $std_flag $include_path \
+            -s WASM=1 \
+            -s EXPORTED_RUNTIME_METHODS=['cwrap','HEAPU8'] \
+            -s ALLOW_MEMORY_GROWTH=1
+    fi   
 
     if [[ $? -eq 0 ]]; then
         echo -e "${GREEN}Compilation successful!${NC}"

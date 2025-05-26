@@ -20,7 +20,7 @@ namespace Fern {
     };
     
     // Factory functions
-    void Container(uint32_t color, int x, int y, int width, int height);
+    void BasicContainer(uint32_t color, int x, int y, int width, int height);
     void CenteredContainer(int width, int height, uint32_t color);
     void LinearGradientContainer(int x, int y, int width, int height, const LinearGradient& gradient);
 }

@@ -10,8 +10,8 @@ namespace Fern {
         Draw::rect(x_, y_, width_, height_, color_);
     }
     
-    void Container(uint32_t color, int x, int y, int width, int height) {
-        auto container = Container(x, y, width, height, color);
+    void BasicContainer(uint32_t color, int x, int y, int width, int height) {
+        Fern::Container container(x, y, width, height, color);
         container.render();
     }
     

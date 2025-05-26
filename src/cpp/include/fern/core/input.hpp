@@ -8,7 +8,6 @@ namespace Fern {
         static InputState& getState();
         static void resetEvents();
         
-        // Called from JS/platform code
         static void updateMousePosition(int x, int y);
         static void updateMouseButton(bool down);
         

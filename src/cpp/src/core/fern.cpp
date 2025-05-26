@@ -9,7 +9,6 @@ namespace Fern {
     void initialize(uint32_t* pixelBuffer, int width, int height) {
         globalCanvas = new Canvas(pixelBuffer, width, height);
         
-        // Set up JS event listeners
         EM_ASM({
             var canvas = document.getElementById('canvas');
             
@@ -39,7 +38,6 @@ namespace Fern {
                 drawCallback();
             }
             
-            // Render to canvas
             EM_ASM({
                 var canvas = document.getElementById('canvas');
                 var ctx = canvas.getContext('2d');
@@ -81,7 +79,6 @@ namespace Fern {
     }
 }
 
-// Export C functions for JS to call
 extern "C" {
     EMSCRIPTEN_KEEPALIVE
     void fernUpdateMousePosition(int x, int y) {

@@ -11,7 +11,7 @@ void draw() {
     Draw::fill(Colors::Gray);
     
     // Draw some shapes
-    Draw::circle(400, 300, 100, Colors::Blue);
+    CircleWidget(400, Fern::Point(300, 100), Colors::Blue);
     Draw::rect(100, 100, 200, 150, Colors::Red);
     
     // Draw UI elements
