@@ -4,54 +4,49 @@
   <img src="assets/logo.png" alt="Fern Graphics Logo" width="200"/>
 </p>
 
-A lightweight single-file WebAssembly-based graphics library for creating visual interactive applications using simple C code.
+A lightweight graphics library for creating visual interactive applications using C or C++.
 [Checkout Docs](https://fern.rishia.in)
+
+## Important Notice: C++ Port in Progress
+
+> **Note**: Fern is currently being ported to C++. The original C implementation is fully functional,
+> while the C++ version is under active development. See the [Migration Guide](docs/migration-guide.md) 
+> for details on transitioning between implementations.
+
 ## Table of Contents
 
 - [Overview](#overview)
 - [Key Features](#key-features)
 - [Requirements](#requirements)
 - [Installation](#installation)
-  - [Step 1: Install Dependencies](#step-1-install-dependencies)
-  - [Step 2: Install Fern CLI](#step-2-install-fern-cli)
+- [Implementations](#implementations)
+  - [C Implementation (Stable)](#c-implementation-stable)
+  - [C++ Implementation (In Development)](#c-implementation-in-development)
 - [Quick Start](#quick-start)
 - [API Reference](#api-reference)
-  - [Core Types](#core-types)
-  - [Color Constants](#color-constants)
-  - [Widget Functions](#widget-functions)
-  - [Core Drawing Functions](#core-drawing-functions)
-  - [Application Lifecycle](#application-lifecycle)
-  - [PPM Export](#ppm-export)
-- [Advanced Techniques](#advanced-techniques)
-  - [Creating Filled Shapes](#creating-filled-shapes)
-  - [Creating Scene Components](#creating-scene-components)
 - [CLI Tool Usage](#cli-tool-usage)
-- [Architecture](#architecture)
+- [Project Structure](#project-structure)
 - [Contributing](#contributing)
 - [License](#license)
 
 ## Overview
 
-Fern is a minimalist graphics library designed for simplicity, performance, and ease of use. It provides a declarative API for rendering graphics to HTML canvas via WebAssembly, enabling C developers to create visual applications that run in any modern web browser.
+Fern is a minimalist graphics library designed for simplicity, performance, and ease of use. It provides a declarative API for rendering graphics to HTML canvas via WebAssembly, enabling developers to create visual applications that run in any modern web browser.
 
 ## Key Features
 
-- Single-file implementation for easy integration
-- Declarative API with named parameters
 - WebAssembly-powered rendering for near-native performance
-- Support for basic shapes, lines, and pixel manipulation
-- Bitmap font text rendering with customizable scale
-- Linear gradient support with multi-color stops
+- Available in both C (stable) and C++ (in development) implementations
+- Support for shapes, lines, gradients, and pixel manipulation
 - Interactive UI elements including buttons with callbacks
 - Mouse event capture and handling
 - Simple CLI tool for compiling and serving applications
-- PPM image export capability for saving renderings
-- Lightweight (~1000 lines of code)
+- Image export capability for saving renderings
 
 ## Requirements
 
 - Emscripten SDK
-- Modern C compiler (supporting C99 or later)
+- C compiler (C99 or later) or C++ compiler (C++14 or later)
 - Python 3 (for development server)
 - Web browser with WebAssembly support
 
@@ -631,9 +626,7 @@ fern [FILENAME]
 - Starts a local web server
 - Open http://localhost:8000/dist/ in your browser
 
-## Architecture
-
-### Library Structure
+## Project Structure
 
 ```mermaid
 graph TD
@@ -657,35 +650,7 @@ graph TD
         K --> L[Browser Display]
     end
     
-    F --> M[PPM Export]
-```
-
-### Rendering Pipeline
-
-```mermaid
-sequenceDiagram
-    participant User as User Code
-    participant Fern as Fern Library
-    participant WASM as WebAssembly
-    participant Canvas as HTML Canvas
-    participant DOM as Browser Events
-    
-    User->>Fern: Create Canvas
-    User->>Fern: Set Draw Callback
-    Fern->>Fern: Initialize Event System
-    User->>Fern: Start Render Loop
-    
-    DOM->>Fern: Mouse Events
-    Fern->>Fern: Update InputState
-    
-    loop Every Frame
-        Fern->>User: Call Draw Callback
-        User->>Fern: Draw UI Elements
-        Fern->>Fern: Process UI Interactions
-        Fern->>WASM: Update Pixel Buffer
-        WASM->>Canvas: Render to Screen
-        Fern->>Fern: Reset One-Time Events
-    end
+    F --> M[Image Export]
 ```
 
 ## Contributing

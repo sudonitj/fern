@@ -27,7 +27,10 @@
 *.i*86
 *.x86_64
 *.hex
-fern
+
+dist/
+dist
+
 example
 
 # Debug files

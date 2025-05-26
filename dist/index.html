@@ -1,18 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fern Applications</title>
+    <meta charset="utf-8">
+    <title>Fern Graphics Demo</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1 { color: #333; }
-        a { color: #0066cc; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        body { 
+            background-color: #222; 
+            color: #eee;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 { margin-bottom: 20px; }
     </style>
 </head>
 <body>
-    <h1>Fern Applications</h1>
-    <p><a href="example.html">example</a></p>
+  <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+    <script>
+      var Module = {
+        canvas: document.getElementById('canvas')
+      };
+    </script>
+    <script async type="text/javascript" src="index.js"></script>
 </body>
-</html>
+</html> 
