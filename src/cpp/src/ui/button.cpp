@@ -3,7 +3,7 @@
 #include "../../include/fern/graphics/primitives.hpp"
 #include "../../include/fern/text/font.hpp"
 #include <cstring>
-
+#include <memory>
 namespace Fern {
     Button::Button(const ButtonConfig& config)
         : config_(config) {}
@@ -26,6 +26,9 @@ namespace Fern {
     }
     
     bool Button::handleInput(const InputState& input) {
+        bool wasHovered = isHovered_;
+        bool wasPressed = isPressed_;
+
         isHovered_ = input.mouseX >= config_.x && 
                      input.mouseX < config_.x + config_.width &&
                      input.mouseY >= config_.y &&
@@ -33,18 +36,31 @@ namespace Fern {
         
         isPressed_ = isHovered_ && input.mouseDown;
         
-        if (isHovered_ && input.mouseClicked && config_.onClick) {
-            config_.onClick();
+        if (wasHovered != isHovered_) {
+            onHover.emit(isHovered_);
+        }
+
+        if (wasPressed != isPressed_) {
+            onPress.emit(isPressed_);
+        }
+
+        if (isHovered_ && input.mouseClicked) {
+            onClick.emit();
             return true;
         }
         
         return false;
     }
     
-    void ButtonWidget(const ButtonConfig& config) {
-        auto button = Button(config);
+    std::shared_ptr<Button> ButtonWidget(const ButtonConfig& config) {
+        auto button = std::make_shared<Button>(config);
         const auto& input = Input::getState();
-        button.handleInput(input);
-        button.render();
+        button->handleInput(input);
+
+        if (config.onClick) {
+            button->onClick.connect(config.onClick);
+        }
+        button->render();
+        return button;
     }
 }

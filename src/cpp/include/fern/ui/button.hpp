@@ -3,6 +3,8 @@
 #include "widget.hpp"
 #include <string>
 #include <functional>
+#include <memory>
+#include "../core/signal.hpp"
 
 namespace Fern {
     struct ButtonConfig {
@@ -16,7 +18,7 @@ namespace Fern {
         std::string label;
         int textScale;
         uint32_t textColor;
-        std::function<void()> onClick;
+        std::function<void()> onClick; // deprecated
     };
     
     class Button : public Widget {
@@ -25,6 +27,10 @@ namespace Fern {
         
         void render() override;
         bool handleInput(const InputState& input) override;
+
+        Signal<> onClick;       
+        Signal<bool> onHover;   
+        Signal<bool> onPress;   
         
     private:
         ButtonConfig config_;
@@ -33,5 +39,5 @@ namespace Fern {
     };
     
     // Factory function for easier creation
-    void ButtonWidget(const ButtonConfig& config);
+    std::shared_ptr<Button> ButtonWidget(const ButtonConfig& config);
 }
