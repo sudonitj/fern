@@ -51,11 +51,11 @@ void draw() {
     std::string counterText = "CLICKS: " + std::to_string(clickCount);
     TextWidget(Point(50, 550), counterText.c_str(), 2, Colors::White);
     
-
-    if (myButton) {
-        myButton->handleInput(Input::getState());
-        myButton->render();
-    }
+    // Taken care by WidgetManager
+    // if (myButton) {
+    //     myButton->handleInput(Input::getState());
+    //     myButton->render();
+    // }
 }
 
 int main() {

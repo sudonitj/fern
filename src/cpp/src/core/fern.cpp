@@ -1,5 +1,6 @@
 #include "../../include/fern/fern.hpp"
 #include "../../include/fern/core/input.hpp"
+#include "../../include/fern/core/widget_manager.hpp"
 #include <emscripten.h>
 #include <functional>
 
@@ -37,6 +38,9 @@ namespace Fern {
             if (drawCallback) {
                 drawCallback();
             }
+
+            WidgetManager::getInstance().updateAll(Input::getState());
+            WidgetManager::getInstance().renderAll();
             
             EM_ASM({
                 var canvas = document.getElementById('canvas');

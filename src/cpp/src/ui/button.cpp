@@ -1,5 +1,6 @@
 #include "../../include/fern/ui/button.hpp"
 #include "../../include/fern/core/input.hpp"
+#include "../../include/fern/core/widget_manager.hpp"
 #include "../../include/fern/graphics/primitives.hpp"
 #include "../../include/fern/text/font.hpp"
 #include <cstring>
@@ -23,7 +24,8 @@ namespace Fern {
             
             Text::drawText(config_.label.c_str(), textX, textY, config_.textScale, config_.textColor);
         }
-    }
+    }        const auto& input = Input::getState();
+
     
     bool Button::handleInput(const InputState& input) {
         bool wasHovered = isHovered_;
@@ -54,13 +56,12 @@ namespace Fern {
     
     std::shared_ptr<Button> ButtonWidget(const ButtonConfig& config) {
         auto button = std::make_shared<Button>(config);
-        const auto& input = Input::getState();
-        button->handleInput(input);
-
         if (config.onClick) {
             button->onClick.connect(config.onClick);
         }
-        button->render();
+
+        addWidget(button);
+        
         return button;
     }
 }
