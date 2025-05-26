@@ -5,7 +5,7 @@
 </p>
 
 A lightweight graphics library for creating visual interactive applications using C or C++.
-[Checkout Docs](https://fern.rishia.in)
+[Checkout C implementation Docs](https://fern.rishia.in)
 
 ## Important Notice: C++ Port in Progress
 
@@ -38,8 +38,10 @@ Fern is a minimalist graphics library designed for simplicity, performance, and 
 - WebAssembly-powered rendering for near-native performance
 - Available in both C (stable) and C++ (in development) implementations
 - Support for shapes, lines, gradients, and pixel manipulation
-- Interactive UI elements including buttons with callbacks
-- Mouse event capture and handling
+- Signal/Slot event system for flexible event handling (C++)
+- Automatic widget lifecycle management (C++)
+- Interactive UI elements with comprehensive event handling
+- Mouse event capture and processing
 - Simple CLI tool for compiling and serving applications
 - Image export capability for saving renderings
 
@@ -82,9 +84,25 @@ sudo install -m 644 fern.1 /usr/local/share/man/man1/
 sudo mandb
 ```
 
+## Implementations
+
+### C Implementation (Stable)
+The original C implementation provides a simple, function-based API with callbacks for event handling. The C version is stable and feature-complete.
+
+### C++ Implementation (In Development)
+The C++ implementation enhances Fern with object-oriented design principles and modern C++ features:
+
+- **Signal/Slot Event System**: Instead of simple callbacks, widgets emit signals that can be connected to multiple slot functions
+- **Widget Management**: Automatic lifecycle and input handling through a central widget manager
+- **Smart Pointers**: Automatic memory management with shared_ptr for widgets
+- **Type Safety**: Improved type checking and error detection at compile time
+- **Inheritance Hierarchy**: Extensible widget class hierarchy
+
+The C++ version maintains the same core rendering capabilities while providing a more robust foundation for complex applications.
+
 ## Quick Start
 
-Create a basic application:
+Create a basic C application:
 
 ```c
 // main.c
@@ -122,7 +140,63 @@ Compile and run:
 
 ```bash
 fern main.c
-# Open http://localhost:8000/dist/ in your browser
+```
+
+Create a basic C++ application:
+
+```cpp
+// main.cpp
+#include <fern/fern.hpp>
+#include <memory>
+#include <iostream>
+
+using namespace Fern;
+
+#define WIDTH 800
+#define HEIGHT 600
+
+static uint32_t pixels[HEIGHT*WIDTH];
+static std::shared_ptr<Button> button;
+
+void setupUI() {
+    // Create a button with the signal/slot pattern
+    ButtonConfig config = {
+        .x = WIDTH/2 - 100, 
+        .y = HEIGHT/2 - 30, 
+        .width = 200, 
+        .height = 60,
+        .normalColor = Colors::Blue,
+        .hoverColor = Colors::LightBlue,
+        .pressColor = Colors::DarkBlue,
+        .label = "CLICK ME",
+        .textScale = 2,
+        .textColor = Colors::White
+    };
+    
+    button = ButtonWidget(config);
+    button->onClick.connect([]() {
+        std::cout << "Button clicked!" << std::endl;
+    });
+}
+
+void draw() {
+    Draw::fill(Colors::DarkGray);
+    TextWidget(Point(50, 50), "FERN C++ DEMO", 3, Colors::White);
+}
+
+int main() {
+    Fern::initialize(pixels, WIDTH, HEIGHT);
+    setupUI();
+    Fern::setDrawCallback(draw);
+    Fern::startRenderLoop();
+    return 0;
+}
+```
+
+Compile and run:
+
+```bash
+fern --cpp main.cpp
 ```
 
 ## API Reference
@@ -327,7 +401,122 @@ ButtonConfig my_button = {
 ButtonWidget(my_button);
 ```
 
+#### ButtonWidget (C++ Version)
+Creates an interactive button that responds to mouse events using the Signal/Slot pattern.
+
+```cpp
+struct ButtonConfig {
+    int x;
+    int y;
+    int width;
+    int height;
+    uint32_t normalColor;
+    uint32_t hoverColor;
+    uint32_t pressColor;
+    std::string label;
+    int textScale;
+    uint32_t textColor;
+};
+
+// Create a button and automatically register it with the widget manager
+std::shared_ptr<Button> ButtonWidget(const ButtonConfig& config);
+
+// Button class with signals
+class Button : public Widget {
+public:
+    // Signals
+    Signal<> onClick;        // Emitted when button is clicked
+    Signal<bool> onHover;    // Emitted when hover state changes
+    Signal<bool> onPress;    // Emitted when press state changes
+    
+    // ... other methods
+};
+```
+Example usage:
+
+```cpp
+ButtonConfig config = {
+    .x = 100,
+    .y = 200,
+    .width = 200,
+    .height = 60,
+    .normalColor = Colors::Blue,
+    .hoverColor = Colors::LightBlue,
+    .pressColor = Colors::DarkBlue,
+    .label = "CLICK ME",
+    .textScale = 2,
+    .textColor = Colors::White
+};
+
+auto button = ButtonWidget(config);
+
+// Connect multiple handlers to signals
+button->onClick.connect([]() {
+    std::cout << "Button was clicked!" << std::endl;
+});
+
+button->onHover.connect([](bool isHovered) {
+    std::cout << (isHovered ? "Mouse over button" : "Mouse left button") << std::endl;
+});
+
+```
+
+### Signal/Slot Event System (C++)
+
+The C++ implementation uses a Signal/Slot pattern for event handling:
+
+```cpp
+// Define a signal with specific parameter types
+Signal<int, std::string> mySignal;
+
+// Connect functions (slots) to the signal
+ConnectionID id1 = mySignal.connect([](int value, const std::string& msg) {
+    std::cout << "Handler 1: " << value << " - " << msg << std::endl;
+});
+
+// Connect another handler
+mySignal.connect([](int value, const std::string& msg) {
+    std::cout << "Handler 2: " << value << " - " << msg << std::endl;
+});
+
+// Emit the signal - all connected handlers will be called
+mySignal.emit(42, "Hello World");
+
+// Disconnect a specific handler by its ID
+mySignal.disconnect(id1);
+```
+
+This system provides several advantages:
+- Multiple handlers can respond to the same event
+- Events and handlers are decoupled (widgets don't need to know about handlers)
+- Type-safe parameter passing between event sources and handlers
+- Dynamic connection and disconnection at runtime
+
+### Widget Management (C++)
+
+The C++ implementation includes a widget management system that handles:
+
+```cpp
+// Add a widget to the manager
+std::shared_ptr<Widget> myWidget = /* create widget */;
+addWidget(myWidget);
+
+// Widget manager handles:
+// - Input distribution (in correct Z-order)
+// - Automatic rendering
+// - Lifecycle management
+```
+
+When you create widgets using factory functions like `ButtonWidget()`, they are 
+automatically registered with the widget manager.
+
+The widget manager maintains strong references to all widgets, ensuring they persist
+even if local variables go out of scope, and automatically handles input propagation
+and rendering during each frame of the render loop.
+
 ### Core Drawing Functions
+
+#### C Drawing API
 
 For more advanced use cases, you can use the lower-level drawing functions:
 
@@ -361,8 +550,40 @@ void fernPrintf(const char* message);
 
 ```
 
+#### C++ Drawing API
+The C++ implementation provides a static `Draw` class for rendering:
+
+```cpp
+namespace Fern {
+    namespace Draw {
+        // Fill entire canvas with a color
+        void fill(uint32_t color);
+        
+        // Draw a rectangle
+        void rect(int x, int y, int width, int height, uint32_t color);
+        
+        // Draw a circle
+        void circle(int centerX, int centerY, int radius, uint32_t color);
+        
+        // Draw a line with thickness
+        void line(int x1, int y1, int x2, int y2, int thickness, uint32_t color);
+        
+        // Get current canvas dimensions
+        int getWidth();
+        int getHeight();
+        
+        // Set a specific pixel
+        void setPixel(int x, int y, uint32_t color);
+        
+        // Get color of a specific pixel
+        uint32_t getPixel(int x, int y);
+    }
+}
+```
+
 ### Application Lifecycle
 
+#### C Implementation
 ```c
 // Initialize the application with a canvas
 void runApp(FernCanvas canvas);
@@ -373,61 +594,34 @@ void fern_start_render_loop(void);
 // Optional: Set a draw function to be called every frame
 void fern_set_draw_callback(void (*draw_function)(void));
 ```
-For basic applications, you can draw once and call fern_start_render_loop():
 
-```c
-int main() {
-    // Initialize
-    FernCanvas canvas = {pixels, HEIGHT, WIDTH};
-    runApp(canvas);
-    
-    // Draw static content
-    Container(/* parameters */);
-    CircleWidget(/* parameters */);
-    
-    // Start rendering
-    fern_start_render_loop();
-    return 0;
-}
+#### C++ Implementation
+```cpp
+// Initialize the library with a pixel buffer
+void initialize(uint32_t* pixelBuffer, int width, int height);
+
+// Set a function to be called every frame
+void setDrawCallback(std::function<void()> callback);
+
+// Start the rendering loop
+void startRenderLoop();
 ```
 
-For interactive applications, use a draw callback:
-
-```c
-// Global state variables
-static int circle_radius = 50;
-
-void on_button_click() {
-    circle_radius += 10;  // Update state
-}
-
-void draw_frame() {
-    // Clear background
-    Container(color(Colors_black), x(0), y(0), width(WIDTH), height(HEIGHT));
-    
-    // Draw with current state
-    CircleWidget(radius(circle_radius), position(Point_create(WIDTH/2, HEIGHT/2)), color(Colors_red));
-    
-    // Create interactive elements
-    ButtonConfig button = {
-        .x = 100, .y = 200, .width = 200, .height = 60,
-        .normal_color = Colors_blue, .hover_color = 0xFF4444FF, .press_color = 0xFF0000AA,
-        .label = "INCREASE SIZE", .text_scale = 2, .text_color = Colors_white,
-        .on_click = on_button_click
-    };
-    ButtonWidget(button);
-}
-
+Example usage:
+```cpp
 int main() {
-    // Initialize
-    FernCanvas canvas = {pixels, HEIGHT, WIDTH};
-    runApp(canvas);
+    // Initialize with pixel buffer
+    static uint32_t pixels[600 * 800];
+    Fern::initialize(pixels, 800, 600);
     
-    // Set draw callback
-    fern_set_draw_callback(draw_frame);
+    // Set up UI once
+    setupUI();
     
-    // Start rendering
-    fern_start_render_loop();
+    // Set drawing callback for frame updates
+    Fern::setDrawCallback(draw);
+    
+    // Start rendering loop
+    Fern::startRenderLoop();
     return 0;
 }
 ```
@@ -619,14 +813,34 @@ void draw_frame() {
 ```
 fern [FILENAME]
 ```
+Options:
+- `--cpp`: Use the C++ implementation instead of C
+- `--no-serve`: Compile only, don't start the web server
+- `--port PORT`: Use a specific port for the web server (default: 8000)
+
+Examples:
+```bash
+# Compile a C file (default)
+fern example.c
+
+# Compile a C++ file
+fern --cpp example.cpp
+
+# Just compile without starting server
+fern --no-serve example.c
+```
+
+Basic Usage:
 
 - If FILENAME is not provided, looks for main.c or example.c in the current directory
 - Compiles the specified file to WebAssembly
 - Creates a dist/ directory if it doesn't exist
-- Starts a local web server
+- Starts a local web server (unless --no-serve is specified)
 - Open http://localhost:8000/dist/ in your browser
 
 ## Project Structure
+
+### C Implementation Structure
 
 ```mermaid
 graph TD
@@ -653,6 +867,45 @@ graph TD
     F --> M[Image Export]
 ```
 
+<<<<<<< HEAD
+=======
+### C++ Implementation Structure
+
+```mermaid
+graph TD
+    A[Application Code] --> B[Fern C++ Library]
+    B --> C[WebAssembly Module]
+    C --> D[Canvas Rendering]
+    
+    subgraph "Core Components"
+        E[Widget Base Class] --> F[Signal/Slot System]
+        G[Widget Manager] --> E
+        H[Render Loop] --> G
+        B --> E
+        B --> F
+        B --> H
+        B --> I[Draw Class]
+        I --> J[Pixel Buffer]
+    end
+    
+    subgraph "Event Flow"
+        K[Browser Events] --> L[Input Manager]
+        L --> M[Widget Input Handling]
+        M --> N[Signal Emission]
+        N --> O[User Event Handlers]
+    end
+    
+    G --"UpdateAll()"--> P[Processes Input]
+    G --"RenderAll()"--> Q[Renders Widgets]
+    
+    F --"Connect()"--> R[Register Functions]
+    F --"Emit()"--> S[Call Functions]
+    F --"Disconnect()"--> T[Remove Functions]
+```
+
+This diagram illustrates how the C++ implementation connects signals to slots, manages widgets, and handles the event flow from browser events to your application code.
+
+>>>>>>> upstream/master
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
